@@ -1,0 +1,29 @@
+{% extends "catalyst/page.html" %}
+
+{% block content %}
+<div class="user-form">
+  <div class="row">
+    <div class="col-md-2">
+      <a class="go-back" href="{% url 'catalyst_users' %}"><i class="fa fa-chevron-left"></i> Back to all users</a>
+      <h5 class="header">New User</h5>
+    </div>
+    <div class="col-md-10">
+      <form method="POST">
+        {% csrf_token %}
+        {% for field in form %}
+          <label class="control-label">{{ field.label }}</label>
+          <div class="form-group">
+            {{field}}
+          {% for error in field.errors %}
+            <span style="color: red">{{error}}</span>
+          {% endfor %}
+          </div>
+        {% endfor %}
+        <button type="submit" class="button save">Save</button>
+        <a class="button button-white" href="{% url 'catalyst_users' %}">Exit</a>
+      </form>
+    </div>
+  </div>
+</div>
+  
+{% endblock content %}

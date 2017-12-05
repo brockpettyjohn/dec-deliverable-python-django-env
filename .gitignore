@@ -1,0 +1,22 @@
+.DS_STORE
+__pycache__
+*.pyc
+*~
+/lib
+/static
+.vscode
+catalyst/static/catalyst/css/book.css
+catalyst/static/catalyst/css/create_book.css
+catalyst/static/catalyst/css/flip.css
+catalyst/static/catalyst/css/page.css
+catalyst/static/catalyst/css/image_maps_creator.css
+
+
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml
+
+#sublime-gulp log files
+.sublime-gulp.cache
+sublime-gulp.log

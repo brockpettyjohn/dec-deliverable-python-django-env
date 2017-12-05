@@ -1,0 +1,684 @@
+
+{% load static %}
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Poppins:300,400,600,700,400italic" type="text/css">
+    <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Muli:300,400,600,700,400italic" type="text/css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M"
+        crossorigin="anonymous">
+    <link rel="stylesheet" href="{% static 'catalyst/css/book.css' %}" type="text/css">
+    <link rel="stylesheet" href="{% static 'catalyst/css/create_book.css' %}" type="text/css">
+    <link rel="stylesheet" href="{% static 'catalyst/css/image_maps_creator.css' %}" type="text/css">
+    <link rel="stylesheet" type="text/css" href="https://code.jquery.com/ui/1.9.2/themes/base/jquery-ui.css">
+    <script src="{% static 'catalyst/js/imageMapResizer.js' %}"></script>
+</head>
+
+<body>
+    {% verbatim %}
+    <div id="app" v-cloak>
+        <nav id="toolbar" class="navbar navbar-expand-md navbar-dark bg-dark">
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarDiv"
+                aria-controls="navbarDiv" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarDiv">
+                <ul class="navbar-nav mr-auto">
+                    <li class="nav-item">
+                        <button class="btn btn-primary" v-on:click="openSettings" v-tooltip="'Edit book info'"><i class="fa fa-book fa-lg" aria-hidden="true"></i></button>
+                    </li>
+                    <li class="nav-item">
+                        <button id="editVocabButton" class="btn btn-primary" v-on:click="editVocab" v-tooltip="'Edit vocabulary'"><i class="fa fa-comments-o fa-lg" aria-hidden="true"></i></button>
+                    </li>
+<!--                     <li class="nav-item">
+                        <button id="editSingleWords" class="btn btn-primary" v-on:click="editSingleWords" v-tooltip="'Single Words'"><i class="fa fa-microphone fa-lg" aria-hidden="true"></i></button>
+                    </li> -->
+                    <li class="nav-item">
+                        <button class="btn btn-primary" v-on:click="addImage" v-tooltip="'Add image'"><i class="fa fa-picture-o fa-lg" aria-hidden="true"></i></button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="btn btn-primary" v-on:click="addText" v-tooltip="'Add text'"><i class="fa fa-font fa-lg" aria-hidden="true"></i></button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="btn btn-primary" v-on:click="addVideo" v-tooltip="'Add video'"><i class="fa fa-video-camera fa-lg" aria-hidden="true"></i></button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="btn btn-primary" v-on:click="insertPage" v-tooltip="'Insert page'"><i class="fa fa-file-o fa-lg" aria-hidden="true"></i></button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="btn btn-primary" v-on:click="duplicatePage" v-tooltip="'Duplicate page'"><i class="fa fa-files-o fa-lg" aria-hidden="true"></i></button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="btn btn-primary" v-show="(pages.length-1) > 0" v-on:click="removePage" v-tooltip="'Remove page'"><i class="fa fa-trash-o fa-lg" aria-hidden="true"></i></button>
+                    </li>
+                    <!--li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="dropdown01" data-toggle="dropdown" aria-haspopup="true">Action</a>
+                        <div class="dropdown-menu" aria-labelledby="dropdown01">
+                            <a class="dropdown-item" href="javascript:void(0)" v-on:click="addImage">Add Image</a>
+                            <a class="dropdown-item" href="javascript:v oid(0)" v-on:click="addText">Add Text</a>
+                            <a class="dropdown-item" href="javascript:void(0)" v-on:click="removePage">Remove Page</a>
+                            <a class="dropdown-item" href="javascript:void(0)" v-on:click="openSettings">Edit Book Info</a>
+                        </div>
+                    </li-->
+                    <li class="nav-item nav-link">Page {{ curPage + 1 }} of {{ pages.length }}</li>
+                </ul>
+                <form class="form-inline">
+                    <button type="button" class="btn btn-secondary" onclick="location.href='/'" style="margin-right: 10px" v-tooltip="'Back to Book Library'"><i class="fa fa-chevron-left fa-lg" aria-hidden="true"></i>&nbsp;</button>
+                    <button type="button" class="btn btn-secondary" v-on:click="viewBook" style="margin-right: 10px" v-if="bookId" v-tooltip="'View Book'"><i class="fa fa-eye fa-lg" aria-hidden="true"></i></button>
+                    <button type="button" class="btn btn-primary" v-on:click="save" v-tooltip="'Save Book'"><i class="fa fa-floppy-o fa-lg" aria-hidden="true"></i></button>
+                </form>
+            </div>
+        </nav>
+
+        <div id="book">
+            <div class="page" v-for="(page, index) in pages" v-if="curPage == index">
+                <div v-for="(image, image_index) in page.images" v-resize
+                     v-bind:class="{ 'item-selected': modalShowing && image == editingImage }" class="image"
+                     :style="image.style" :index="image_index" v-on:click="imageClicked(image, $event)"
+                     is_image="true" style="position:absolute">
+                    <img :src="image.src" style="width:100%;position:initial">
+                </div>
+                <div v-for="(video, video_index) in page.videos" v-resize
+                     v-bind:class="{ 'item-selected': modalShowing && video == editingVideo }" class="video"
+                     :style="video.style" :index="video_index" v-on:click="videoClicked(video, $event)"
+                     is_video="true" style="position:absolute">
+                    <video :src=video.src :index="video_index" controls style="width:100%;position:initial"></video>
+                </div>
+                <div v-for="(text, text_index) in page.texts" class="text" v-resize style="cursor: default"
+                    :style="text.style" :index="text_index" is_text="true" v-on:click="textClicked(text, $event)"
+                    v-bind:class="{ 'item-selected': modalShowing && text == editingText, shadow: text.shadow, bold: text.bold, italic: text.italic }">
+                    <span v-html="getDisplayText(text.text)"></span>
+                </div>
+                <img id="backButton" v-if="curPage != 0" class="book-corner"
+                    src="/static/catalyst/corner_left.svg" v-on:click="loadPreviousPage">
+                <img id="forwardButton" class="book-corner"
+                    src="/static/catalyst/corner_right.svg" v-on:click="loadNextPage">
+                <div id="progress-bar"><div class="complete"></div></div>
+                <img id="pauseButton" class="disabled-button pause-button" src="/static/catalyst/action_buttons/Settings.svg">
+                <div class="button-container-right">
+                    <img id="recordButton" class="disabled-button" src="/static/catalyst/action_buttons/Record.svg">
+                    <img id="playButton" class="disabled-button" src="/static/catalyst/action_buttons/Speaker.svg">
+                    <img id="replayButton" class="disabled-button" src="/static/catalyst/action_buttons/Repeat.svg">
+                </div>
+            </div>
+        </div>
+
+        <template v-if="creatingImageMap">
+            <div id="map-app">
+                <div id="editor-nav">
+                    <div class="row">
+                        <div class="col-sm-5"> 
+                            <button id="rectangle" class="btn btn-primary"><a href="#"><i class="fa fa-square-o"></i>rectangle</a></button>
+                            <button id="circle"    class="btn btn-primary"><a href="#"><i class="fa fa-circle-thin"></i>circle</a></button>
+                            <button id="polygon"   class="btn btn-primary"><a href="#"><i class="fa fa-star-o"></i>polygon</a></button>
+                            <button id="edit"      class="btn btn-primary"><a href="#"><i class="fa fa-arrows"></i></a></button>
+                        </div>
+                        <div class="col-sm-2">
+                            <div class="row">
+                                <div id="coords"></div>
+                            </div>
+                            <div class="row">
+                                <div id="instructions"></div>
+                            </div>
+                        </div>
+
+                        <div class="col-sm-5">
+                            <button id="save"      class="btn btn-success right">   <a href="#"><i class="fa fa-check"></i>done with image</a></button>
+                            <button id="exit"      class="btn btn-secondary right"> <a href="#"><i class="fa fa-times"></i>cancel</a></button>
+                            <button id="clear"     class="btn btn-danger right">    <a href="#"><i class="fa fa-trash"></i>clear all</a></button>    
+                        </div>
+                        <!-- <button id="to_html" class="btn btn-primary"><a href="#">to html</a></button> -->
+                        <!-- <li id="preview" class="btn btn-primary"><a href="#">preview</a></li> -->
+                        <!-- <button id="show_help" class="btn btn-primary"><a href="#">?</a></button> -->
+                    </div>
+                </div>
+
+                <div id="alpha-container">
+                    <div id="mapWrapper">
+                        <div id="mapImage">
+                            <img :src="editingImage.src" alt="#" id="mapImg" />
+                            <svg xmlns="http://www.w3.org/2000/svg" version="1.2" baseProfile="tiny" id="svg"></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="form-underlay"></div>
+
+                <form id="edit_details">
+
+                    <h5>Map Name</h5>
+                    <p>
+                        <input v-validate="'required'" class="form-control" placeholder="Untitled Map" name="name" type="text" id="name_attr" />
+                        <p id="naming_error" v-show="errors.has('name')" class="error">{{ errors.first('name') }}</p>
+                    </p>
+
+
+                    <div class="buttons">
+                        <button class='btn btn-success' id="save_details" style="float: right; width: 48%;"><i class="fa fa-check"></i> done</button>
+                        <button class='btn btn-danger' id="delete_shape" style="float: left; width: 48%;"><i class="fa fa-trash"></i> delete</button>
+                    </div>
+                </form>
+
+            </div>
+        </template>
+        <div class="modal fade" id="settingsModal">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Edit Book Info <i v-if="showDialogProgress" class="fa fa-spin fa-spinner"></i></h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="titleInput">Title</label>
+                            <input id="titleInput" v-model="title" class="form-control">
+                        </div>
+                        <div class="row">
+                            <div class="col-lg-6">
+                                <div class="form-group">
+                                    <label for="authorInput">Author</label>
+                                    <input id="authorInput" v-model="author" class="form-control">
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="form-group">
+                                    <label for="illustratorInput">Illustrator</label>
+                                    <input class="form-control" v-model="illustrator">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-lg-6">
+                                <div class="form-group">
+                                    <label for="readingLevelInput">Reading Level</label>
+                                     <a href="https://lexile.com/educators/measuring-growth-with-lexile/lexile-measures-grade-equivalents/" target="_blank"><i class="fa fa-question-circle" aria-hidden="true"></i></a>
+                                    <select id="readingLevelInput" v-model="readingLevel" class="form-control">
+                                        <option>None</option>
+                                        <option>Kindergarten</option>
+                                        <option>Grade 1</option>
+                                        <option>Grade 2</option>
+                                        <option>Grade 3</option>
+                                        <option>Grade 4</option>
+                                        <option>Grade 5</option>
+                                        <option>Grade 6</option>
+                                        <option>Grade 7</option>
+                                        <option>Grade 8</option>
+                                        <option>Grade 9</option>
+                                        <option>Grade 10</option>
+                                        <option>Grade 11</option>
+                                        <option>Grade 12</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="form-group">
+                                    <label for="lexileInput">Lexile Level</label>
+                                    <a href="https://lexile.com/educators/tools-to-support-reading-at-school/tools-to-determine-a-books-complexity/the-lexile-analyzer/" target="_blank"><i class="fa fa-question-circle" aria-hidden="true"></i></a>
+                                    <input class="form-control" v-model="lexileLevel">
+                                </div>
+                            </div>
+                        </div>
+                        <input type="file" id="coverImageInput" v-on:change="uploadCoverImage" style="display:none">
+                        <button class="btn btn-primary" v-on:click.prevent="clickFileInput('coverImageInput')">
+                            Upload thumbnail image
+                        </button> (600px by 600px)
+                        <img class="cover-image" v-if="coverImageUrl" v-bind:src="coverImageUrl">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-danger mr-auto" data-dismiss="modal"
+                            v-on:click="deleteBook" v-if="bookId">Delete Book</button>
+                        <!--button type="button" class="btn btn-primary">Save changes</button-->
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal fade" id="vocabModal">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Edit Vocab <i v-if="showDialogProgress" class="fa fa-spin fa-spinner"></i></h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row headers">
+                            <div class="header" v-for="header in ['Words', 'Image Maps', 'Selected Order']">{{ header }}</div>
+                        </div>
+                        <div class="row">
+                            <div class="column">
+                                <div class="vocab-list">
+                                    <div v-for="word in pageWords">
+                                        <label><input type="checkbox" v-model="pages[curPage].vocabulary" :value="word"> {{ word.word }}</label>
+                                    </div>
+                                    <div v-if="pageWords.length == 0" class="no-vocab-items">
+                                        <span v-html="'No Words'"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="column">
+                                <div class='vocab-list'>
+                                    <div v-for="map in pageMapNames">
+                                        <label><input type="checkbox" v-model="pages[curPage].vocabulary" :value="map"> {{ map.word }}</label>
+                                    </div>
+                                    <div v-if="pageMapNames.length == 0" class="no-vocab-items">
+                                        <span v-html="'No Maps'"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div v-sortable="{onEnd: reorderVocab}" class="column">
+                                <div class="selected" v-for="(vocab,vocabIndex) in pages[curPage].vocabulary" :key="vocab.id">
+                                    <i class="fa fa-bars"></i>
+                                    <span v-html="vocab.word" :type="vocab.type"> </span>
+                                    <i class="fa fa-picture-o" v-if="vocab.type == 'map'"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal fade" id="singleWordModal">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Edit Single Words <i v-if="showDialogProgress" class="fa fa-spin fa-spinner"></i></h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row headers">
+                            <div class="header" v-for="header in ['Words', 'Image Maps']">{{ header }}</div>
+                        </div>
+                        <div class="row">
+                            <div class="column">
+                                <div class="vocab-list">
+                                    <div v-for="word in pageWords">
+                                        <span>{{word.word}}<span>
+                                    </div>
+                                    <div v-if="pageWords.length == 0" class="no-vocab-items">
+                                        <span v-html="'No Words'"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="column">
+                                <div class='vocab-list'>
+                                    <div v-for="map in pageMapNames">
+                                        <label><input type="checkbox" v-model="pages[curPage].vocabulary" :value="map"> {{ map.word }}</label>
+                                    </div>
+                                    <div v-if="pageMapNames.length == 0" class="no-vocab-items">
+                                        <span v-html="'No Maps'"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal fade" id="editModal" data-backdrop="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">{{adding ? 'Add' : 'Edit'}} {{ editingText ? 'text' : editingImage ? 'image' : 'video'}} <i v-if="showDialogProgress" class="fa fa-spin fa-spinner"></i></h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <template v-if="editingText">
+                            <div class="form-group">
+                                <div class="text-controls">
+                                    <span>
+                                        <input id="fontSizeInput" class="group-left-item" type="text" v-model="editingText.style['font-size']" v-on:change="fontSizeChanged" style="width:70px;float:left">
+                                        <span class="input-group-btn" style="float:left;margin-right:5px">
+                                            <button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown"
+                                                aria-haspopup="true" aria-expanded="false">
+                                            </button>
+                                            <div class="dropdown-menu dropdown-menu-right">
+                                                <span class="dropdown-item" v-for="size in ['.75em', '1em', '1.25em', '1.5em', '2em', '2.5em']"
+                                                    v-on:click="editingText.style['font-size'] = size;defaultFontSize = size">{{ size }}</span>
+                                            </div>
+                                        </span>
+                                    </span>
+                                    <span class="dropdown-no-arrow">
+                                        <span aria-haspopup="true" aria-expanded="false" data-toggle="dropdown"  style="position:relative;display:inline-block">
+                                            <i class="fa fa-font"></i>
+                                            <span class="font-color-span" v-bind:style="{ 'background-color': translateColor(editingText.style.color) }"></span>
+                                        </span>
+                                        <div class="dropdown-menu dropdown-menu-right">
+                                            <span class="dropdown-item" v-for="color in ['black', 'white', 'red']"
+                                                v-on:click="editingText.style.color = translateColor(color)">
+                                                <span class="color-chooser" v-bind:style="{ 'background-color': translateColor(color) }"></span>
+                                                &nbsp;{{ color }}
+                                            </span>
+                                        </div>
+                                    </span>
+                                    <i class="fa fa-tint" v-on:click="editingText.shadow = !editingText.shadow"
+                                        v-bind:class="{ selected: editingText.shadow }"></i>
+                                    <i class="fa fa-bold" v-on:click="editingText.bold = !editingText.bold"
+                                        v-bind:class="{ selected: editingText.bold }"></i>
+                                    <i class="fa fa-italic" v-on:click="editingText.italic = !editingText.italic"
+                                        v-bind:class="{ selected: editingText.italic }"></i>
+                                    <span class="dropdown-no-arrow">
+                                        <button type="button" class="dropdown-toggle" data-toggle="dropdown"
+                                            style="width:86px;background-color:white;color:black;font-size:initial"
+                                            aria-haspopup="true" aria-expanded="false" v-bind:style="{ 'font-family': editingText.style['font-family'] }">
+                                            {{ editingText.style['font-family'] }}
+                                        </button>
+                                        <div class="dropdown-menu dropdown-menu-right">
+                                            <span class="dropdown-item" v-for="font in ['Poppins', 'Muli']"
+                                                v-on:click="editingText.style['font-family'] = font"
+                                                v-bind:style="{ 'font-family': editingText.style['font-family'] }">
+                                                {{ font }}
+                                            </span>
+                                        </div>
+                                    </span>
+                                    <i title="Left align" class="fa fa-align-left" v-on:click="editingText.style['text-align'] = 'left'"
+                                        v-bind:class="{ selected: editingText.style['text-align'] == 'left' }"></i>
+                                    <i class="fa fa-align-center" v-on:click="editingText.style['text-align'] = 'center'"
+                                        v-bind:class="{ selected: editingText.style['text-align'] == 'center' }"></i>
+                                    <i class="fa fa-align-right" v-on:click="editingText.style['text-align'] = 'right'"
+                                        v-bind:class="{ selected: editingText.style['text-align'] == 'right' }"></i>
+                                    <i class="fa fa-align-justify" v-on:click="editingText.style['text-align'] = 'justify'"
+                                        v-bind:class="{ selected: editingText.style['text-align'] == 'justify' }"></i>
+                                </div>
+                                <textarea class="form-control" v-model="editingText.text" id="textValue" placeholder="Enter text here"></textarea>
+                            </div>
+                            <div class="row">
+                                <div class="col-lg-3">
+                                    <div class="form-group">
+                                        <label for="widthValue">Width</label>
+                                        <input class="form-control" placeholder="Enter width (e.g. 40%)" v-model="(editingImage||editingText||editingVideo).style.width" id="widthValue">
+                                    </div>
+                                </div>
+                                <div class="col-lg-3">
+                                    <div class="form-group">
+                                        <label for="topInput">Top</label>
+                                        <!--i class="text-control fa fa-arrows-v" v-on:click="verticallyCenterTextBox" v-tooltip="'Center vertically using current height %'"></i-->
+                                        <input class="form-control" v-model="editingText.style.top" id="topInput">
+                                    </div>
+                                </div>
+                                <div class="col-lg-3">
+                                    <div class="form-group">
+                                        <label for="leftInput">Left</label>
+                                        <i class="text-control fa fa-arrows-h" v-on:click="horizontallyCenterItem(editingText)" v-tooltip="'Center horizontally using current width %'"></i>
+                                        <input class="form-control" v-model="editingText.style.left" id="leftInput">
+                                    </div>
+                                </div>
+                                <div class="col-lg-3">
+                                    <div class="form-group">
+                                        <label for="orderValue">Order</label>
+                                        <i class="fa fa-question-circle" v-tooltip="'Order in which audio is played'" ></i>
+                                        <select id="orderValue" v-on:change="orderChanged" class="form-control">
+                                            <option v-for="(text, text_index) in pages[curPage].texts"
+                                                :value="text_index" :selected="editingText == text">
+                                                {{ text_index + 1 }}
+                                            </option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                        <template v-if="editingImage">
+                            <div class="row">
+                                <div class="col-lg-4">
+                                    <div class="form-group">
+                                        <label for="widthValue">Width</label>
+                                        <input class="form-control" placeholder="Enter width (e.g. 40%)" v-model="(editingImage||editingText||editingVideo).style.width" id="widthValue">
+                                    </div>
+                                </div>
+                                <div class="col-lg-4">
+                                    <div class="form-group">
+                                        <label for="topValue">Top</label>
+                                        <input class="form-control" v-model="editingImage.style.top" id="topValue">
+                                    </div>
+                                </div>
+                                <div class="col-lg-4">
+                                    <div class="form-group">
+                                        <label for="topValue">Left</label>
+                                        <i class="text-control fa fa-arrows-h" v-on:click="horizontallyCenterItem(editingImage)" v-tooltip="'Center horizontally using current width %'"></i>
+                                        <input class="form-control" v-model="editingImage.style.left" id="leftValue">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row" v-if="notDefault">
+                                <div class="col-lg-12">
+                                    <button class="edit-maps-button btn btn-secondary" v-on:click="addImageMap"><i class="fa fa-hand-pointer-o"></i> Edit Image Hot Spots</button>
+                                    <div v-if="editingImage.imageMapHTML && editingImage.imageMapHTML.length" id="image-maps">
+                                        <div class="img-map-item" v-for="(area, area_index) in getAreaObjects(editingImage.imageMapHTML)"><i class="fa fa-picture-o" style="margin-right: 10px"></i>{{area.dataset.name ? area.dataset.name : 'Unnamed map'}}</div>
+                                    </div>
+                                    <div class="no-maps" v-else>no image hot spots</div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <hr style="width: 100%">
+                                <div class="col-lg-12">
+                                    <div class="form-group">
+                                        <input type="file" id="fileImageInput" v-on:change="uploadImageFile" style="display:none">
+                                        <button class="btn btn-primary btn-block" v-on:click.prevent="clickFileInput('fileImageInput')"><i class="fa fa-plus"> </i>{{notDefault ? ' Change Image':' Upload Image'}}</button>
+                                        <div style="margin-top:10px">
+                                            <input class="form-control" style="width:200px;display:inline" v-model="imageWebSearchInput" v-on:keyup.enter="doImageWebSearch" v-on:keyup="imageWebSearchInputChanged">
+                                            <button class="btn btn-primary" v-on:click="doImageWebSearch">Web Search</button>
+                                            <i class="fa fa-spinner" v-if="imageWebSearchLoading"></i>
+                                        </div>
+                                        <div style="max-height: 400px; overflow-y: scroll; margin-top: 10px">
+                                            <img v-for="image in imageWebSearchResults" :src="image" style="cursor:pointer;max-width:100px;max-height:100px;margin-right:10px;margin-bottom:10px" v-on:click="selectWebImage(image)">
+                                        </div>
+                                    </div>
+                                </div>
+                                <!--div class="col-lg-8">
+                                    <div class="form-group">
+                                        <label for="urlValue">URL</label>
+                                        <input class="form-control" v-model="editingImage.src" id="urlValue">
+                                    </div>
+                                </div-->
+                            </div>
+                        </template>
+                        <template v-if="editingVideo">
+                            <div class="row">
+                                <div class="col-lg-5">
+                                    <div class="form-group">
+                                        <!--label for="fileImageInput">Upload</label>
+                                        <br-->
+                                        <input type="file" id="fileVideoInput" v-on:change="uploadVideoFile" style="display:none">
+                                        <button class="btn btn-primary" v-on:click.prevent="clickFileInput('fileVideoInput')">Upload Video</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-lg-5">
+                                    <div class="form-group">
+                                        <label for="widthValue">Width</label>
+                                        <input class="form-control" placeholder="Enter width (e.g. 40%)" v-model="(editingImage||editingText||editingVideo).style.width" id="widthValue">
+                                    </div>
+                                </div>
+                                <div class="col-lg-5">
+                                    <div class="form-group">
+                                        <label for="topValue">Top</label>
+                                        <input class="form-control" v-model="editingVideo.style.top" id="topValue">
+                                    </div>
+                                </div>
+                                <div class="col-lg-5">
+                                    <div class="form-group">
+                                        <label for="topValue">Left</label>
+                                        <input class="form-control" v-model="editingVideo.style.left" id="leftValue">
+                                    </div>
+                                </div>
+                                <div class="col-lg-5">
+                                    <div class="form-group">
+                                        <label for="orderVideo">Order</label>
+                                        <i class="fa fa-question-circle" v-tooltip="'Order in which audio is played'"
+                                            title="Order in which video is played"></i>
+                                        <select id="orderVideo" v-on:change="orderChanged" class="form-control">
+                                            <option v-for="(video, video_index) in pages[curPage].videos"
+                                                :value="video_index" :selected="editingVideo == video">
+                                                {{ video_index + 1 }}
+                                            </option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                        <template v-if="editingText">
+                            Audio
+                            <br>
+                            <div class="form-check form-check-inline">
+                                <label class="form-check-label">
+                                    <input class="form-check-input" type="radio" name="audio" id="audio3"
+                                        value="none" v-model="editingText.audio.type"> None
+                                </label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <label class="form-check-label">
+                                    <input class="form-check-input" type="radio" name="audio" id="audio2"
+                                        value="record" v-model="editingText.audio.type"> Record
+                                </label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <label class="form-check-label">
+                                    <input class="form-check-input" type="radio" name="audio" id="audio1"
+                                        value="uploadAudio" v-model="editingText.audio.type"> Upload
+                                </label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <label class="form-check-label">
+                                    <input class="form-check-input" type="radio" name="audio" id="audio1"
+                                        value="tts" v-model="editingText.audio.type"> Text to speech
+                                </label>
+                            </div>
+                            <template v-if="editingText.audio.type == 'tts'">
+                                <div class = "voices">
+                                    Select Voice:
+                                    <select v-model="TTSVoice" class="form-control">
+                                        <option value="Emma">Emma - UK</option>
+                                        <option value="Amy">Amy - UK</option>
+                                        <option value="Brian">Brian - UK</option>
+                                        <option value="Joanna">Joanna - US</option>
+                                        <option value="Ivy">Ivy - US</option>
+                                        <option value="Kendra">Kendra - US</option>
+                                        <option value="Kimberly">Kimberly - US</option>
+                                        <option value="Salli">Salli - US</option>
+                                        <option value="Joey">Joey - US</option>
+                                        <option value="Justin">Justin - US</option>
+                                    </select>
+                                    <button class="btn btn-primary" v-on:click="saveTTSAudio" id="chooseVoiceButton" :class="{'disabled-button': editingText.text.length > 3000}">Generate</button>
+                                    <template v-if="(editingText.audio.recording && editingText.audio.recordingType == 'tts' && editingText.audio.text == editingText.text)">
+                                        <audio id="audioPlayer" v-on:play="audioPlayed" v-on:ended="audioEnded" controls>
+                                            <source :src="editingText.audio.recording" type="audio/mpeg">
+                                        </audio>
+                                    </template>
+                                    <span v-else style="color:red"><br>Your Audio is out of date</span>
+                                    <br>
+                                    <span v-show="editingText.text.length > 3000" style="color:red">Your Text is too large</span>
+                                    <br>
+                                    <template v-if = "(editingText.audio.recording && editingText.audio.recordingType == 'tts' && editingText.audio.text == editingText.text)" v-for="(word, index) in editingText.audio.values">
+                                        <span v-bind:class="{ highlight: highlightWords == index}"
+                                            class="highlight-word" v-on:click="markHighlightWord">{{ word }} </span>
+                                    </template>
+                                </div>
+                            </template>
+                            <template v-if="editingText.audio.type == 'record' || editingText.audio.type == 'uploadAudio' ">
+                                <div>
+                                    <i v-if="!recording && editingText.audio.type != 'uploadAudio'" class="fa fa-microphone record-button" v-on:click="startRecord"></i>
+                                    <i v-if="recording" class="fa fa-stop record-button" v-on:click="stopRecord"></i>
+
+                                    <input type="file" id="fileAudioInput" v-on:change="uploadAudioFile" style="display:none">
+                                    <i v-if="editingText.audio.type == 'uploadAudio'" class="fa fa-upload record-button" v-on:click.prevent="clickFileInput('fileAudioInput')"></i>
+
+                                    <template v-if="(editingText.audio.recording && editingText.audio.recordingType == 'userRecording')">
+                                        <audio id="audioPlayer" v-on:play="audioPlayed" v-on:ended="audioEnded" controls>
+                                            <source :src="editingText.audio.recording" type="audio/mpeg">
+                                        </audio>
+                                        <div style="margin-top: 5px">
+                                            <button class="btn btn-primary" v-on:click="editHighlighting" id="editHighlightButton">Edit highlighting</button>
+                                            <select v-model="audioSpeed">
+                                                <option value="1">Normal speed</option>
+                                                <option value=".75">Three-Quarters speed</option>
+                                                <option value=".5">Half speed</option>
+                                            </select>
+                                            <i class="fa fa-question-circle" v-tooltip="'Press Spacebar as each word is spoken to set highlighting'" ></i>
+                                        </div>
+                                    </template>
+                                    <br>
+                                    <template v-if = "(editingText.audio.recording && editingText.audio.recordingType == 'userRecording')" v-for="(word, index) in editingText.text.replace(/  +/g, ' ').trim().split(/[\s]/)">
+                                        <span v-bind:class="{ highlight: highlightWords == index}"
+                                            class="highlight-word" v-on:click="markHighlightWord">{{ word }} </span>
+                                    </template>
+                                </div>
+                            </template>
+                        </template>
+                    </div>
+                    <div class="modal-footer">
+                        <!--button type="button" class="btn btn-primary">Save changes</button-->
+                        <button type="button" class="btn btn-danger mr-auto" data-dismiss="modal" v-on:click="removeItem">Remove</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal" aria-label="close" v-on:click="closeWindow">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% endverbatim %}
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://unpkg.com/vue/dist/vue.js"></script>
+    <script src="https://unpkg.com/sortablejs@latest"></script>
+    <script src="https://unpkg.com/vue-sortable@latest"></script>
+    <script src="{% static 'catalyst/js/recorder.min.js' %}"></script>
+    <script src="{% static 'catalyst/js/vee-validate.js' %}"></script>
+    <script src="{% static 'catalyst/js/popper.min.js' %}"></script>
+    <script src="{% static 'catalyst/js/image_map_creator.js' %}"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+    <!-- <script src="{% static 'catalyst/js/vue-sortable.js' %}"></script> / -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js" integrity="sha384-h0AbiXch4ZDo7tp9hKZ4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNm1"
+        crossorigin="anonymous"></script>
+
+    <script>
+        var bookId = {% if book_id %}{{ book_id }}{% else %}null{% endif %};
+        var voice = '{{ voice }}';
+        var defaultText = JSON.parse('{{ default_text|escapejs }}');
+        var defaultImage = JSON.parse('{{ default_image|escapejs }}');
+        var defaultVideo = JSON.parse('{{ default_video|escapejs }}');
+        var defaultVocab = JSON.parse('{{ default_vocab|escapejs}}');
+        var TTSVoice = '{{ TTSVoice }}'
+        var selectedVocab = '{{ selectedVocab }}'
+        var vocabInputWord = '{{ vocabInputWord }}'
+        var title = '{{ title|escapejs }}';
+        var author = '{{ author|escapejs }}';
+        var illustrator = '{{ illustrator|escapejs }}';
+        var coverImageUrl = '{{ cover_image_url|escapejs }}';
+        var readingLevel = '{{reading_level|escapejs}}';
+        var lexileLevel = '{{lexile_level|escapejs}}';
+        var pages = JSON.parse('{{ pages|escapejs }}');
+        var voices = '{{ voices|escapejs }}';
+        var deleteBookUrl = '{% url 'catalyst_create_book_delete' %}';
+        var saveBookUrl = '{% url 'catalyst_create_book_save' %}';
+        var saveAudioUrl = '{% url 'catalyst_create_book_save_audio' %}';
+        var saveImageUrl = '{% url 'catalyst_create_book_save_image' %}';
+        var saveVideoUrl = '{% url 'catalyst_create_book_save_video' %}';
+        var savettsUrl = '{% url 'catalyst_create_book_save_tts' %}';
+        // $(document).ready(function() {
+        //     $('[data-toggle="tooltip"]').tooltip();
+        // });
+
+        Vue.use(VeeValidate);
+    </script>
+    <script src="{% static 'catalyst/js/create_book.js' %}"></script>
+</body>
+
+</html>

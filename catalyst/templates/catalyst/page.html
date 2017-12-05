@@ -1,0 +1,100 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Book Library</title>
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
+    <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Poppins:300,400,600,700,400italic" type="text/css">
+    <link href="https://fonts.googleapis.com/icon?family=Oswald" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Roboto:200,300,400,500,600,700" rel="stylesheet">
+    <link href="{% static 'catalyst/css/page.css' %}" rel="stylesheet">
+    {% block head %}{% endblock %}
+</head>
+
+<body>
+    {% block nav %}
+    <div class="navbar-fixed">
+        <nav>
+            <a href="#" data-activates="slide-out" class="button-collapse">
+                <i class="fa fa-bars"></i>
+            </a>
+            Book Library
+
+            <div class="nav-item dropdown dropdown-icon">
+                <img class="account-image" src="{% static 'catalyst/profile.svg' %}" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                <div class="dropdown-menu">
+                    <a class="dropdown-item" href="{% url 'catalyst_user_details' user_id=request.user.id %}">My Account</a>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item" href="{% url 'catalyst_sign_out' %}">Log Out</a>
+                </div>
+            </div>
+
+        </nav>
+    </div>
+    <header>
+        <ul id="slide-out" class="side-nav fixed">
+            <li style="display:none">
+                <div class="user-view">
+                    <a href="#!user"><img class="circle" src="{% static 'catalyst/blank_picture.png' %}"></a>
+                    <a href="#!name"><span class="white-text name">John Doe</span></a>
+                    <a href="#!email"><span class="white-text email">jdoe@gmail.com</span></a>
+                </div>
+            </li>
+            {% for tab in tabs_primary %}
+            <li{% if active_tab == tab.name %} class="active" {% endif %}>
+                <a href="{{ tab.url }}"><i class="fa fa-fw fa-{{ tab.icon }}"></i></a>
+            </li>
+            {% endfor %}
+        </ul>
+    </header>
+    {% endblock %}
+
+    <main>
+        <div class="container">
+            {% if messages %}
+                {% for message in messages %}
+                <div{% if message.tags %} class="alert alert-{{ message.tags }}"{% endif %}>
+                    <a class="close" data-dismiss="alert" href="#">&times;</a>
+                    {{ message }}
+                </div>
+                {% endfor %}
+            {% endif %}
+            {% block content %}Override me{% endblock %}
+        </div>
+    </main>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js" integrity="sha384-b/U6ypiBEHpOf/4+1nzFpr53nxSS+GLCkfwBdFNTxtclqqenISfwAzpKaMNFNmj4" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js" integrity="sha384-h0AbiXch4ZDo7tp9hKZ4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNm1" crossorigin="anonymous"></script>
+    <script>
+        $('body').on('click', '#sidenav-overlay', toggleSideNav);
+        $(window).resize(function () {
+            if ($(this).width() >= 992) {
+                if ($('#sidenav-overlay')[0]) {
+                    toggleSideNav();
+                }
+                $('.side-nav').css('transform', '');
+            }
+        });
+        function toggleSideNav() {
+            if ($('#sidenav-overlay')[0]) {
+                $('.side-nav').css('transform', 'translateX(-100%)');
+                $('#sidenav-overlay').fadeOut(200, function() {
+                    $('#sidenav-overlay').remove();
+                });
+            }
+            else {
+                $('.side-nav').css('transform', 'translateX(0)');
+                $('body').append('<div id="sidenav-overlay"></div>');
+                $('#sidenav-overlay').fadeIn(200);
+            }
+        }
+        $(".button-collapse").click(toggleSideNav);
+    </script>
+</body>
+
+</html>

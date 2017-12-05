@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="65px" height="65px" viewBox="0 0 65 65" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 46.2 (44496) - http://www.bohemiancoding.com/sketch -->
+    <title>Repeat</title>
+    <desc>Created with Sketch.</desc>
+    <defs>
+        <circle id="path-1" cx="27.5" cy="27.5" r="27.5"></circle>
+        <filter x="-14.5%" y="-12.7%" width="129.1%" height="129.1%" filterUnits="objectBoundingBox" id="filter-2">
+            <feMorphology radius="0.5" operator="dilate" in="SourceAlpha" result="shadowSpreadOuter1"></feMorphology>
+            <feOffset dx="0" dy="1" in="shadowSpreadOuter1" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="2" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feComposite in="shadowBlurOuter1" in2="SourceAlpha" operator="out" result="shadowBlurOuter1"></feComposite>
+            <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.5 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+    </defs>
+    <g id="Symbols" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Repeat" transform="translate(0.000000, -1.000000)">
+            <g transform="translate(5.000000, 5.000000)">
+                <g id="Oval-3">
+                    <use fill="black" fill-opacity="1" filter="url(#filter-2)" xlink:href="#path-1"></use>
+                    <use fill-opacity="0.6" fill="#FFFFFF" fill-rule="evenodd" xlink:href="#path-1"></use>
+                </g>
+                <path d="M27.5077114,20.1008968 C32.1227161,20.3600652 35.7851454,24.1844938 35.7851454,28.8643285 C35.7851454,33.7119715 31.8553543,37.6417626 27.0077114,37.6417626 C22.3524087,37.6417626 18.5135478,34.0068473 18.2452228,29.3811052 L18.2178989,28.9100599 L14.4909344,28.9100599 L14.5143021,29.4324056 C14.812458,36.0971927 20.3124465,41.3704196 27.0077114,41.3704196 C33.9146348,41.3704196 39.5138025,35.7712519 39.5138025,28.8643285 C39.5138025,22.1248609 34.182843,16.6305056 27.5077114,16.3680499 L27.5077114,12.2144854 L17.8961349,18.384149 L27.5077114,24.5538126 L27.5077114,20.1008968 Z" id="Combined-Shape" fill="#000000"></path>
+            </g>
+        </g>
+    </g>
+</svg>

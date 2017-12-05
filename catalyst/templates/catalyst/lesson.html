@@ -1,0 +1,149 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Catalyst</title>
+	<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+	<!-- <link rel="stylesheet" href="{% static 'catalyst/css/lesson.css' %}" type="text/css"> -->
+    <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script> -->
+    <style type="text/css">
+        body {
+            height: 100%;
+            min-height: 100%;
+        }
+
+        ul {
+            margin-right: 10px;
+        }
+
+        li {
+            display: inline-block;
+        }
+
+        audio {
+            margin-right: 20px;
+            vertical-align: middle;
+        }
+
+        iframe {
+            border: none;
+            padding: 0;
+            //margin: auto;
+            display: block;
+            /* width: 1366px;
+            height: 768px; */
+            width: 100%;
+            height: calc(100% - 70px);
+            height: 100%;
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+
+        @media (max-width: 1366px) {
+            iframe {
+                width: 100%;
+                height: 100%;
+            }
+        }
+
+        button {
+            color: #fff;
+            background-color: #5cb85c;
+            border-color: #4cae4c;
+            display: inline-block;
+            padding: 6px 12px;
+            margin-bottom: 0;
+            font-size: 14px;
+            font-weight: 400;
+            line-height: 1.42857143;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: middle;
+            -ms-touch-action: manipulation;
+            touch-action: manipulation;
+            cursor: pointer;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            background-image: none;
+            border: 1px solid transparent;
+            border-radius: 4px;
+        }
+
+        #footer {
+            position: fixed;
+            width: 100%;
+            text-align: center;
+            /*height: 68px;*/
+            bottom: 0;
+            /*background: #F8F8F8;*/
+            /*border-top: 1px solid #cdcdcd;*/
+        }
+    </style>
+    <script>
+        function isMobileSafari() {
+            var ua = window.navigator.userAgent;
+            var iOS = !!ua.match(/iPad/i) || !!ua.match(/iPhone/i);
+            var webkit = !!ua.match(/WebKit/i);
+            var iOSSafari = iOS && webkit && !ua.match(/CriOS/i);
+            return iOSSafari;
+        }
+
+        function getWidth() {
+            return window.innerWidth
+                || document.documentElement.clientWidth
+                || document.body.clientWidth;
+        }
+
+        function getHeight() {
+            return window.innerHeight
+                || document.documentElement.clientHeight
+                || document.body.clientHeight;
+        }
+        console.log('width: ' + getWidth());
+        console.log('height: ' + getHeight());
+        // $('iframe').css('width', width)
+        function addRecording(li) {
+            recordingslist.appendChild(li);
+        }
+        var jsBridge;
+        function setupWebViewJavascriptBridge(callback) {
+            if (window.WebViewJavascriptBridge) { return callback(WebViewJavascriptBridge); }
+            if (window.WVJBCallbacks) { return window.WVJBCallbacks.push(callback); }
+            window.WVJBCallbacks = [callback];
+            var WVJBIframe = document.createElement('iframe');
+            WVJBIframe.style.display = 'none';
+            WVJBIframe.src = 'https://__bridge_loaded__';
+            document.documentElement.appendChild(WVJBIframe);
+            setTimeout(function () { document.documentElement.removeChild(WVJBIframe) }, 0)
+        }
+        setupWebViewJavascriptBridge(function (bridge) {
+            /* Initialize your app here */
+            jsBridge = bridge;
+            bridge.registerHandler('JS Echo', function (data, responseCallback) {
+                console.log("JS Echo called with:", data)
+                responseCallback(data)
+            })
+            // bridge.callHandler('ObjC Echo', {'UA': navigator.userAgent}, function responseCallback(responseData) {
+            //     console.log("JS received response:", responseData)
+            // })
+            bridge.disableJavscriptAlertBoxSafetyTimeout();
+        })
+    </script>
+</head>
+
+<body>
+    <iframe src="/{{ lesson_path }}" allowfullscreen></iframe>
+    <div id="footer">
+        <ul id="recordingslist" style="list-style:none"></ul>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,37 @@
+{% extends "catalyst/page.html" %}
+
+{% block content %}
+
+
+
+<form class="filter-form">
+    <i class="fa fa-search"></i>
+    <input type="search" class="browser-default" placeholder="search users" style="margin-right: 12px">
+    <a class="button button-white" href="{% url 'catalyst_users_create' %}">Add User</a>
+</form>
+
+<h5>User list</h5>
+
+<table class="table table-hover">
+  <thead>
+    <th>Name</th>
+    <th>Username</th>
+    <th>Email</th>
+    <th>Role</th>
+    <th></th>
+  </thead>
+
+  <tbody class='users-table'>
+    {% for user in users %}
+        <tr>
+          <td><a href="{% url 'catalyst_user_details' user_id=user.id %}">{{user.first_name}} {{user.last_name}}</a></td>
+          <td>{{user.username}}</td>
+          <td>{{user.email}}</td>
+          <td>{{user.get_role_display}}</td>
+          {# <td><a href="{% url 'catalyst_edit_user' user_id=user.id %}"><i class="fa fa-pencil"></i> Edit</a></td> #}
+          <td><a href="{% url 'catalyst_user_delete' user_id=user.id %}" onclick="return confirm('Are you sure you want to delete?')"><i class="fa fa-trash"></i></a></td>
+        </tr>
+    {% endfor %} 
+  </tbody>
+</table>
+{% endblock content %}

@@ -1,0 +1,99 @@
+{% extends "catalyst/page.html" %}
+{% load static %}
+
+{% block content %}
+<!-- <div class="row">
+    <div class="input-field col s6">
+        <i class="material-icons prefix">search</i>
+        <input id="icon_prefix" type="text" class="validate">
+        <label for="icon_prefix">Search</label>
+    </div>
+</div> -->
+<div id="bookList">
+    <form class="filter-form">
+        <i class="fa fa-search"></i>
+        <input type="search" v-model="filter" class="browser-default" placeholder="{{ search_placeholder }}" style="margin-right: 12px" >
+<!--         <label for="GradeSelect">Select Grade</label>
+        <select id="GradeSelect" class="browser-default" v-model="searchGrade">
+            <option>Select grade level</option>
+            <option>Kindergarten</option>
+            <option>Grade 1</option>
+            <option>Grade 2</option>
+            <option>Grade 3</option>
+            <option>Grade 4</option>
+            <option>Grade 5</option>
+            <option>Grade 6</option>
+        </select> -->
+        <select id="sortBar" class="browser-default" v-model="sortType">
+            <option value="Title">Title Sort</option>
+            <option value="Author">Author Sort</option>
+            <option value="Grade">Grade Sort</option>
+            <option value="Lexile">Lexile Sort</option>
+        </select>
+        {% if can_add_book %}
+        <a class="button button-white" href="{% url 'catalyst_create_book' %}">
+            {{ add_button_text }}
+        </a>
+        {% endif %}
+    </form>
+    <div id="cardList">
+        <div class="card" style="float:left" v-for="item in filterCards(sortedArray)">
+            <a :href="item.url">
+                <div class="card-image">
+                    <img :src="item.image">
+                    <div class="card-image-background-overlay">
+                        <div class="option-container">
+                            <a :href="item.url"><span class="option">Interactive</span></a>
+                            <a :href="item.url + '?understand=true'"><span class="option">Vocabulary</span></a>
+                            <a :href="item.url + '?record=true'"><span class="option">Record</span></a>
+                            <a :href="item.edit_url" v-if="item.edit_url && item.can_edit"><span class="option">Edit</span></a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <span class="card-title" v-html="item.title"></span>
+                    <span class="card-text" v-if="item.reading_level" v-html="item.reading_level"></span>
+                    <span class="card-text" v-if="item.lexile_level" v-html="item.lexile_level" style="float:right"></span>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+<!-- {% for item in items %}
+    <div id="bookList">
+        <div class="card" style="float:left">
+            {% if no_action %}<a href="{{ item.url }}">{% endif %}
+                <div class="card-image {% if not no_action %}action-card{% endif %}">
+                    <img src="{{ item.image }}">
+                    {% if not no_action %}
+                    <div class="card-image-background-overlay">
+                        <div class="option-container">
+                        <a href="{{ item.url }}"><span class="option">Interactive</span></a>
+                        <a href="{{ item.url }}?understand=true"><span class="option">Vocabulary</span></a>
+                        {% if show_record %}
+                            <a href="{{ item.url }}?record=true"><span class="option">Record</span></a>
+                        {% endif %}
+                        {% if item.new %}
+                            <a href="{{ item.edit_url }}"><span class="option">Edit</span></a>
+                        {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <span class="card-title">{{ item.title }}</span>
+                    {% if item.sub_title %}<p class="card-text">{{ item.sub_title }}</p>{% endif %}
+                </div>
+            {% if no_action %}</a>{% endif %}
+        </div>
+    </div>
+{% endfor %} -->
+<script src="https://unpkg.com/vue/dist/vue.js"></script>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script>
+        var books = JSON.parse('{{ json_books|escapejs }}');
+        var no_action = '{{no_action}}'
+    </script>
+<script src="{% static 'catalyst/js/cards.js' %}"></script>
+{% endblock %}

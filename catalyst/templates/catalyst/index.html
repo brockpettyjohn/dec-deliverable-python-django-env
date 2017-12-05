@@ -1,0 +1,74 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/meyer-reset/2.0/reset.css" rel="stylesheet">
+    <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Poppins:300,400,600,700,400italic" type="text/css">
+    <link href="https://fonts.googleapis.com/icon?family=Oswald" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Roboto:200,300,400,500,600,700" rel="stylesheet">
+    <link href="{% static 'catalyst/css/alegra.css' %}" rel="stylesheet">
+    <title>Document</title>
+</head>
+    <body>
+        <!-- New index 
+        Book: <a href="/book/1/">Book hardcoded</a><br>
+        Book: <a href="{% url 'catalyst_book' book_id=1 %}">Book with django url</a> -->
+        <div class='alegra-page'>
+            <nav>Alegra Learning Curriculum</nav>
+            <main>
+                    <header>Unit 1</header>
+                    <a href=""><li>Lesson Plan</li></a>
+                    <a href=""><li>Video</li></a>
+                    <a href=""><li>Song</li></a>
+                    <a href=""><li>Book</li></a>
+                    <a href=""><li>Print Outs</li></a>
+                </main>
+                
+                <main2>
+                <header2>Unit 2</header2>
+                <a href=""><li>Lesson Plan</li></a>
+                <a href=""><li>Video</li></a>
+                <a href=""><li>Song</li></a>
+                <a href=""><li>Book</li></a>
+                <a href=""><li>Print Outs</li></a>
+            </main2>
+            <main3>
+                    <header3>Unit 3</header3>
+                <a href=""><li>Lesson Plan</li></a>
+                <a href=""><li>Video</li></a>
+                <a href=""><li>Song</li></a>
+                <a href=""><li>Book</li></a>
+                <a href=""><li>Print Outs</li></a>
+            </main3>
+            <main4>
+                    <header4>Unit 4</header4>
+                <a href=""><li>Lesson Plan</li></a>
+                <a href=""><li>Video</li></a>
+                <a href=""><li>Song</li></a>
+                <a href=""><li>Book</li></a>
+                <a href=""><li>Print Outs</li></a>
+            </main4>
+            <main5>
+                    <header5>Unit 5</header5>
+                <a href=""><li>Lesson Plan</li></a>
+                <a href=""><li>Video</li></a>
+                <a href=""><li>Song</li></a>
+                <a href=""><li>Book</li></a>
+                <a href=""><li>Print Outs</li></a>
+            </main5>
+            <main6>
+                    <header6>Unit 6</header6>
+                <a href=""><li>Lesson Plan</li></a>
+                <a href=""><li>Video</li></a>
+                <a href=""><li>Song</li></a>
+                <a href=""><li>Book</li></a>
+                <a href=""><li>Print Outs</li></a>
+            </main6>
+            
+        </div>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    </body>
+</html>

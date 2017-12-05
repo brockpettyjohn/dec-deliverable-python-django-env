@@ -1,0 +1,137 @@
+{% extends "catalyst/page.html" %}
+
+{% load static %}
+
+{% block nav %}
+{% endblock %}
+
+{% block head %}
+<style>
+body {
+  background-color: initial;
+}
+
+.button-login {
+  height: 40px;
+  border: none;
+  border-radius: 5px;
+  background-color: #1AB6D4;
+  box-shadow: 0 0.5px 0.5px 0 rgba(0, 0, 0, 0.24), 0 0 0.5px 0 rgba(0, 0, 0, 0.12);
+  color: white;
+}
+
+.main-content {
+  background-color: initial;
+  border: none;
+}
+
+.g-signin2 {
+  width: 100%;
+}
+
+.g-signin2 > div {
+  margin: 0 auto;
+}
+
+.logo {
+  width: 80%;
+}
+
+.outer {
+  width: 375px;
+  height: 100vh;
+  padding: 100px 0;
+  padding: calc((100vh - 430px) / 2) 0;
+  margin-right: auto;
+  margin-left: auto;
+  background-color: rgba(255, 255, 255, 0.73);
+}
+
+@media (max-width: 375px) {
+  .outer {
+    width: 100%;
+  }
+}
+
+.helper {
+  display: inline-block;
+  height: 100%;
+  vertical-align: middle;
+}
+
+.frame {
+  text-align: center;
+  margin: 0 0 2em 0;
+  padding-top: 10px;
+}
+
+.inner {
+  padding-top: 20px;
+  text-align: center;
+}
+
+input {
+  background-color: transparent;
+  border: 2px solid #272727;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  padding: 8px;
+  width: 80%;
+  margin-bottom: 20px;
+}
+
+button {
+  width: 80%;
+  margin-top: 20px;
+}
+
+.forgot-text {
+  text-align: right;
+  margin-right: 11%;
+}
+
+.errorlist {
+  color: red;
+  padding: 0 11%;
+  margin: 0;
+  list-style: none;
+  margin-top: -15px;
+  margin-bottom: 15px;
+}
+
+/* Hide chrome autocomplete highlighting
+ https://stackoverflow.com/questions/2781549/removing-input-background-colour-for-chrome-autocomplete/#29350537 */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+    transition: background-color 5000s ease-in-out 0s !important;
+}
+input {
+    border-radius: 0;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<form id="sign-in-form" method="post" action="{% url 'catalyst_sign_in' %}">
+  {% csrf_token %}
+  <div class="outer">
+    <div class="frame">
+      <span class="helper"></span><span style="font-size:30px">Book Library</span>
+    </div>
+    <div class="inner">
+      {{ form.non_field_errors }}
+      {{ form.username }}
+      <br>
+      {{ form.password }}
+      <br>
+      <button class="button-login" type="submit" style="height: 40px;">Sign In</button>
+      <br>
+      <br>
+      {% comment %} <div class="forgot-text">Forgot username or password?</div> {% endcomment %}
+    </div>
+  </div>
+  </form>
+{% endblock %}

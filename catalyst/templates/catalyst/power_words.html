@@ -1,0 +1,751 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Catalyst</title>
+    <script src="//cdn.jsdelivr.net/npm/phaser-ce@2.8.1/build/phaser.min.js"></script>
+    <script src="{% static 'catalyst/js/recorder.min.js' %}"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <style type="text/css">
+        body {
+            margin: 0;
+            text-align: center;
+        }
+
+        video {
+            max-width: 100%;
+            padding: 0;
+            margin: auto;
+            display: block;
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="video-wrapper" style="display:none">
+        <video id="video-el"></video>
+        <!-- <br>
+        <button id="play-video-el">Play/Stop Video</button> -->
+    </div>
+    <script type="text/javascript">
+        function getGameSize() {
+            var w = 1366;
+            var h = 768;
+            if (parent.getWidth() < 1366) {
+                w = parent.getWidth();
+                h = parent.getHeight();
+            }
+            return { width: w, height: h };
+        }
+        var size = getGameSize();
+        // var game = new Phaser.Game(size.width, size.height, Phaser.AUTO, '', {
+        var game = new Phaser.Game("100%", "100%", Phaser.AUTO, '', {
+            preload: preload,
+            create: create,
+            update: update
+        });
+
+        var powerWordsImage;
+        var powerWordsAudio;
+        var parkVideo;
+        var parkVideoSprite;
+        var parkImage;
+        var parkImageScreenPercent = .7;
+        var treeImage;
+        var swingsImage;
+        var slideImage;
+        var stopImage;
+        var micImage;
+        var animateParkSpritesCount = 0;
+        var animateParkSpritesUp = true;
+        var parkImages = [];
+        var needsTapTree = false;
+        var needsTapSwings = false;
+        var needsTapSlide = false;
+        var currentRecordingItem;
+        var parkImagesScale;
+        var stars;
+        var score = 0;
+        var scoreText;
+        var graphics;
+        var currentAudio;
+        var isMobileSafari = parent.isMobileSafari && parent.isMobileSafari();
+        var parkVideoUrl = 'https://storage.googleapis.com/catalyst-test/LetsGoToThePark.mp4';
+        var tempVideo;
+        var recorder;
+        var videoTag;
+
+        function isNativeIOS() {
+            if (!parent.jsBridge) {
+                return false;
+            }
+            if (navigator.platform.substr(0, 2) === 'iP') {
+                //iOS (iPhone, iPod or iPad)
+                var lte9 = /constructor/i.test(window.HTMLElement);
+                var nav = window.navigator, ua = nav.userAgent, idb = !!window.indexedDB;
+                if (ua.indexOf('Safari') !== -1 && ua.indexOf('Version') !== -1 && !nav.standalone) {
+                    // Safari (WKWebView/Nitro since 6+)
+                }
+                else if ((!idb && lte9) || !window.statusbar.visible) {
+                    // UIWebView
+                    return true;
+                }
+                else if ((window.webkit && window.webkit.messageHandlers) || !lte9 || idb) {
+                    // WKWebView
+                    return true;
+                }
+            }
+            // console.log('game.device.iOS ' + game.device.iOS);
+            // console.log('game.device.webApp ' + game.device.webApp);
+            // console.log('parent.jsBridge ' + parent.jsBridge);
+            return game.device.iOS && game.device.webApp && parent.jsBridge;
+        }
+
+        function loadVideo(key, url) {
+            console.log('loading video ' + url);
+            // used to get around error: The video element contains cross-origin data, and may not be loaded.
+            // the cdn must also set up to allow CORS
+            var video = document.createElement('video');
+            video.name = key;
+            video.controls = false;
+            video.autoplay = false;
+            // video.muted = true;
+            // video.crossOrigin = 'anonymous';
+            var loadEvent = game.device.firefox ? 'loadeddata' : 'canplaythrough';
+            var videoLoadEvent = function () {
+                video.removeEventListener(loadEvent, videoLoadEvent, false);
+                game.cache.addVideo(key, url, video);
+            };
+            video.addEventListener(loadEvent, videoLoadEvent, false);
+            video.onerror = function (error) {
+                video.removeEventListener(loadEvent, videoLoadEvent, false);
+                video.onerror = null;
+                video.canplay = false;
+            };
+            video.src = url;
+            video.load();
+            tempVideo = video;
+        }
+
+        function preload() {
+            game.scale.pageAlignHorizontally = true;
+            game.scale.pageAlignVertically = true;
+            // game.scale.onSizeChange.add(function () {
+            //     // this updates the canvas. maybe we can use it
+            //     // if we come up with a magical way to update everything else on the screen
+            //     console.log('onsizechange');
+            //     var size = getGameSize();
+            //     var width = size.width;
+            //     var height = size.height;
+            //     if (width == game.width && height == game.height) {
+            //         return;
+            //     }
+            //     console.log(size);
+            //     game.scale.setGameSize(size.width, size.height);
+            // })
+            // might need this is images are on different domain
+            // game.load.crossOrigin = 'Anonymous';
+            game.stage.backgroundColor = '#fff';
+            // don't pause the game on losing focus
+            game.stage.disableVisibilityChange = true;
+            // handle screen resizes a little better
+            game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
+            game.scale.fullScreenScaleMode = Phaser.ScaleManager.SHOW_ALL;
+            game.load.image('powerWordsImage', '/static/catalyst/powerwords.jpg');
+            game.load.image('parkImage', '/static/catalyst/scene.png');
+            game.load.image('treeImage', '/static/catalyst/tree.png');
+            game.load.image('swingsImage', '/static/catalyst/swings.png');
+            game.load.image('slideImage', '/static/catalyst/slide.png');
+            game.load.image('playImage', '/static/catalyst/play.png');
+            game.load.image('stopImage', '/static/catalyst/stop.png');
+            game.load.image('microphone', '/static/catalyst/microphone.png');
+            game.load.image('startButton', '/static/catalyst/start_button.gif');
+            game.load.image('kidsImage', '/static/catalyst/kids.png');
+            // game.load.video('park', '/static/catalyst/LetsGoToTheParkTrimmed.mp4')
+            // game.load.video('park', 'https://storage.googleapis.com/catalyst-test/LetsGoToThePark.mp4');
+            // loadVideo('park', 'https://storage.googleapis.com/catalyst-test/LetsGoToThePark.mp4');
+            game.load.audio('powerWordsAudio', ['/static/catalyst/audio/Playground_Scene01_Time for PowerWords.ogg', '/static/catalyst/audio/Playground_Scene01_Time for PowerWords.mp3']);
+            game.load.audio('theKidsAudio', ['/static/catalyst/audio/the_kids_in_the_video_went_to_the_park_to_play.ogg', '/static/catalyst/audio/the_kids_in_the_video_went_to_the_park_to_play.mp3']);
+            game.load.audio('youMakeThePictureAudio', ['/static/catalyst/audio/now_you_make_the_picture_of_the_park.ogg', '/static/catalyst/audio/now_you_make_the_picture_of_the_park.mp3']);
+            game.load.audio('thisIsATree', ['/static/catalyst/audio/this_is_a_tree.ogg', '/static/catalyst/audio/this_is_a_tree.mp3']);
+            game.load.audio('thisIsASwing', ['/static/catalyst/audio/this_is_a_swing.ogg', '/static/catalyst/audio/this_is_a_swing.mp3']);
+            game.load.audio('thisIsASlide', ['/static/catalyst/audio/this_is_a_slide.ogg', '/static/catalyst/audio/this_is_a_slide.mp3']);
+            game.load.audio('tapTree', ['/static/catalyst/audio/tap_tree.ogg', '/static/catalyst/audio/tap_tree.mp3']);
+            game.load.audio('tapSwings', ['/static/catalyst/audio/tap_swings.ogg', '/static/catalyst/audio/tap_swings.mp3']);
+            game.load.audio('tapSlide', ['/static/catalyst/audio/tap_slide.ogg', '/static/catalyst/audio/tap_slide.mp3']);
+            game.load.audio('yay', ['/static/catalyst/audio/yay.ogg', '/static/catalyst/audio/yay.mp3']);
+            game.load.audio('sayTree', ['/static/catalyst/audio/say_tree.ogg', '/static/catalyst/audio/say_tree.mp3']);
+            game.load.audio('saySwing', ['/static/catalyst/audio/say_swing.ogg', '/static/catalyst/audio/say_swing.mp3']);
+            game.load.audio('saySlide', ['/static/catalyst/audio/say_slide.ogg', '/static/catalyst/audio/say_slide.mp3']);
+        }
+
+        function create() {
+            var f = game.input.keyboard.addKey(Phaser.KeyCode.F);
+            f.onDown.add(function () {
+                gofull();
+            }, this);
+            var spacebar = game.input.keyboard.addKey(Phaser.KeyCode.SPACEBAR);
+            spacebar.onDown.add(function () {
+                if (parkVideo && parkVideo.playing) {
+                    parkVideo.complete();
+                    parkVideo = null;
+                }
+                else if (videoTag) {
+                    endParkVideo();
+                }
+                else if (currentAudio) {
+                    currentAudio.stop();
+                    // currentAudio = null;
+                }
+            }, this);
+            if (isNativeIOS() || parent.isMobileSafari()) {
+                var button = game.add.button(game.world.centerX, game.world.centerY, 'startButton', function () {
+                    // showPark();
+                    start();
+                    button.destroy();
+                }, this, 0, 1, 2);
+                button.anchor.setTo(.5, .5);
+            }
+            else {
+                start();
+            }
+        }
+
+        function start() {
+            powerWordsImage = game.add.sprite(game.world.centerX, game.world.centerY, 'powerWordsImage');
+            powerWordsImage.anchor.setTo(.5, .5);
+            if (powerWordsImage.width > game.world.width) {
+                powerWordsImage.scale.setTo(game.world.width / powerWordsImage.width);
+            }
+            if (powerWordsImage.height > game.world.height) {
+                powerWordsImage.scale.setTo(game.world.height * powerWordsImage.scale.x / powerWordsImage.height);
+            }
+
+            powerWordsAudio = game.add.audio('powerWordsAudio');
+            // game.sound.setDecodedCallback([ powerWordsAudio ], start, this);
+            powerWordsAudio.onStop.add(function () {
+                // Firefox calls onStop twice when manually calling stop on audio
+                powerWordsAudio.onStop.removeAll();
+                playParkVideo();
+            }, this);
+            //console.log('usingWebAudio: ' + powerWordsAudio.usingWebAudio + '. usingAudioTag: ' + powerWordsAudio.usingAudioTag);
+            powerWordsAudio.play();
+            currentAudio = powerWordsAudio;
+            // game.input.onDown.add(gofull, this);
+        }
+
+        function update() {
+            if (animateParkSpritesCount) {
+                // console.log(parkImages[0].scale.x);
+                if (parkImages[0].scale.x >= parkImagesScale + .07) {
+                    animateParkSpritesUp = false;
+                }
+                for (var i = 0; i < parkImages.length; i++) {
+                    if (animateParkSpritesUp) {
+                        parkImages[i].scale.setTo(parkImages[i].scale.x + .005)
+                    }
+                    else {
+                        parkImages[i].scale.setTo(parkImages[i].scale.x - .005)
+                    }
+                }
+                if (parkImages[0].scale.x < parkImagesScale) {
+                    animateParkSpritesCount--;
+                    animateParkSpritesUp = true;
+                }
+            }
+        }
+
+        function playParkVideo(audio) {
+            currentAudio = null;
+            powerWordsImage.destroy();
+            if (true) {
+                videoTag = document.getElementById('video-el');
+                // videoTag.defaultPlaybackRate = 5.0;
+                videoTag.autoplay = true;
+                // videoTag.muted = true;
+                var source = document.createElement('source');
+                source.src = parkVideoUrl;
+                videoTag.appendChild(source);
+                $('#video-wrapper').show();
+                $(videoTag).click(function () {
+                    if (videoTag.paused) {
+                        videoTag.play();
+                    }
+                    else {
+                        videoTag.pause();
+                        $(this).hide();
+                    }
+                });
+                $('canvas').hide();
+                videoTag.addEventListener('ended', endParkVideo);
+                videoTag.addEventListener('pause', pauseParkVideo);
+                videoTag.addEventListener('webkitendfullscreen', endParkVideo, false);
+            }
+            else {
+                // this doesn't work very well for CORS videos
+                parkVideo = game.add.video('park');
+                console.log(parkVideo.video);
+                if (parkVideo.video) {
+                    var videoAspectRatio = parkVideo.width / parkVideo.height;
+                    var scale = getVideoScale(parkVideo);
+                    parkVideoSprite = parkVideo.addToWorld(game.world.width / 2, game.world.height / 2, .5, .5, scale, scale);
+                    parkVideo.onComplete.add(showPark);
+                    parkVideo.play();
+                    // game.time.events.add(2000, showPark, this);
+                }
+                else {
+                    parkVideo = null;
+                    showPark();
+                }
+            }
+        }
+
+        function pauseParkVideo() {
+            if (!videoTag.webkitDisplayingFullscreen) {
+                endParkVideo();
+            }
+        }
+
+        function endParkVideo() {
+            if (videoTag.webkitExitFullScreen) {
+                videoTag.webkitExitFullScreen();
+            }
+            $('#video-wrapper').hide();
+            videoTag.pause();
+            videoTag.src = "";
+            videoTag.load();
+            videoTag = null;
+            $('canvas').show();
+            showPark();
+        }
+
+        function showPark() {
+            if (parkVideo) {
+                parkVideo.destroy();
+                parkVideoSprite.destroy();
+            }
+            var image = game.cache.getImage('parkImage');
+            parkImage = game.add.sprite(game.world.centerX, game.world.centerY - (game.world.height * (1 - parkImageScreenPercent) / 2), 'parkImage');
+            parkImage.anchor.setTo(.5, .5);
+            if (parkImage.width > game.world.width) {
+                parkImage.scale.setTo(game.world.width / parkImage.width);
+            }
+            if (parkImage.height > game.world.height * parkImageScreenPercent) {
+                parkImage.scale.setTo(1);
+                parkImage.scale.setTo(game.world.height * parkImageScreenPercent / parkImage.height);
+            }
+            treeImage = game.add.sprite(0, 0, 'treeImage');
+            swingsImage = game.add.sprite(0, 0, 'swingsImage');
+            slideImage = game.add.sprite(0, 0, 'slideImage');
+            treeImage.anchor.setTo(.5, 1);
+            swingsImage.anchor.setTo(.5, 1);
+            slideImage.anchor.setTo(.5, 1);
+            parkImages = [treeImage, swingsImage, slideImage];
+            parkImagesScale = .30 * parkImage.height / treeImage.height;
+            for (var i = 0; i < parkImages.length; i++) {
+                parkImages[i].scale.setTo(parkImagesScale);
+            }
+            swingsImage.x = game.world.centerX;
+            treeImage.x = game.world.centerX - parkImage.width / 3;
+            slideImage.x = game.world.centerX + parkImage.width / 3;
+            treeImage.y = parkImage.bottom + treeImage.height + game.world.height * .035;
+            swingsImage.y = parkImage.bottom + treeImage.height + game.world.height * .035;
+            slideImage.y = parkImage.bottom + treeImage.height + game.world.height * .035;
+            var kidsAudio = game.add.audio('theKidsAudio');
+            kidsAudio.onStop.add(function () {
+                kidsAudio.onStop.removeAll();
+                nowYouMakeThePicture();
+            }, this);
+            kidsAudio.play();
+            currentAudio = kidsAudio;
+        }
+
+        function nowYouMakeThePicture() {
+            for (var i = 0; i < parkImages.length; i++) {
+                parkImages[i].inputEnabled = true;
+                parkImages[i].input.enableDrag(true);
+                parkImages[i].events.onDragStop.add(onDragStop, this);
+            }
+            var youMakeThePictureAudio = game.add.audio('youMakeThePictureAudio');
+            youMakeThePictureAudio.onStop.add(function () {
+                youMakeThePictureAudio.onStop.removeAll();
+                currentAudio = null;
+                animateParkSpritesCount = 2;
+            }, this);
+            youMakeThePictureAudio.play();
+            currentAudio = youMakeThePictureAudio;
+        }
+
+        function onDragStop(sprite, pointer) {
+            var done = true;
+            for (var i = 0; i < parkImages.length; i++) {
+                if (parkImages[i].bottom > parkImage.bottom) {
+                    return;
+                }
+            }
+            for (var i = 0; i < parkImages.length; i++) {
+                parkImages[i].inputEnabled = false;
+                parkImages[i].input.draggable = false;
+                parkImages[i].events.onDragStop.removeAll();
+            }
+
+            drawBoxAroundSprite(treeImage);
+            var thisIsATree = game.add.audio('thisIsATree');
+            thisIsATree.onStop.add(function () {
+                thisIsATree.onStop.removeAll();
+                drawBoxAroundSprite(swingsImage);
+                var thisIsASwing = game.add.audio('thisIsASwing');
+                thisIsASwing.onStop.add(function () {
+                    thisIsASwing.onStop.removeAll();
+                    drawBoxAroundSprite(slideImage);
+                    var thisIsASlide = game.add.audio('thisIsASlide');
+                    thisIsASlide.onStop.add(function () {
+                        thisIsASlide.onStop.removeAll();
+                        boxGraphics.destroy();
+                        needsTapSwings = true;
+                        swingsImage.bringToTop();
+                        var tap = game.add.audio('tapSwings');
+                        tap.onStop.add(function () {
+                            currentAudio = null;
+                        });
+                        for (var i = 0; i < parkImages.length; i++) {
+                            parkImages[i].inputEnabled = true;
+                            parkImages[i].events.onInputDown.add(tapListener, this);
+                        }
+                        tap.play();
+                        currentAudio = tap;
+                    }, this);
+                    slideImage.bringToTop();
+                    thisIsASlide.play();
+                    currentAudio = thisIsASlide;
+                }, this);
+                swingsImage.bringToTop();
+                thisIsASwing.play();
+                currentAudio = thisIsASwing;
+            }, this);
+            treeImage.bringToTop();
+            thisIsATree.play();
+            currentAudio = thisIsATree;
+        }
+
+        var boxGraphics;
+        function drawBoxAroundSprite(image) {
+            if (boxGraphics) {
+                boxGraphics.destroy();
+            }
+            boxGraphics = game.add.graphics(0, 0);
+            boxGraphics.lineStyle(2, 0x0000FF, 1);
+            boxGraphics.drawRect(image.left - 5, image.top - 5, image.width + 10, image.height + 10);
+        }
+
+        function tapListener(sprite) {
+            if (needsTapSwings && sprite == swingsImage) {
+                needsTapSwings = false;
+                needsTapTree = true;
+                treeImage.bringToTop();
+                var tap = game.add.audio('tapTree');
+                tap.play();
+            }
+            else if (needsTapTree && sprite == treeImage) {
+                needsTapTree = false;
+                needsTapSlide = true;
+                slideImage.bringToTop();
+                var tap = game.add.audio('tapSlide');
+                tap.play();
+            }
+            else if (needsTapSlide && sprite == slideImage) {
+                needsTapSlide = false;
+                playYay(function () {
+                    if (isNativeIOS()) {
+                        startRecordingSequence();
+                    }
+                    else {
+                        if (Recorder.isRecordingSupported()) {
+                            initRecorder(startRecordingSequence);
+                        }
+                        else {
+                            showEnd();
+                        }
+                    }
+                });
+            }
+        }
+
+        function startRecording() {
+            if (isNativeIOS()) {
+                parent.jsBridge.callHandler('StartRecording', { item: currentRecordingItem }, function responseCallback(responseData) {
+                    console.log("JS received response for StartRecording:", responseData);
+                });
+            }
+            else {
+                var startFunction = function () {
+
+                };
+                recorder.start();
+            }
+        }
+
+        function stopRecording(callback) {
+            if (isNativeIOS()) {
+                parent.jsBridge.callHandler('StopRecording', {}, function responseCallback(responseData) {
+                    addNativeRecordingToParent(currentRecordingItem, '.caf');
+                    callback();
+                });
+            }
+            else {
+                var stopFunction = function (e) {
+                    recorder.removeEventListener("stop", stopFunction);
+                    if (callback == showEnd) {
+                        // must manually call this since we set leaveStreamOpen = true
+                        recorder.clearStream();
+                    }
+                    callback();
+                };
+                recorder.addEventListener("stop", stopFunction);
+                recorder.stop();
+            }
+        }
+
+        function startRecordingSequence() {
+            var sayTree = game.add.audio('sayTree');
+            var saySwing = game.add.audio('saySwing');
+            var saySlide = game.add.audio('saySlide');
+
+            sayTree.onStop.add(function () {
+                sayTree.onStop.removeAll();
+                currentAudio = null;
+                currentRecordingItem = 'Tree';
+                startRecording();
+                addStopImage(function () {
+                    saySwing.onStop.add(function () {
+                        saySwing.onStop.removeAll();
+                        currentAudio = null;
+                        currentRecordingItem = 'Swing';
+                        startRecording();
+                        addStopImage(function () {
+
+                            saySlide.onStop.add(function () {
+                                saySlide.onStop.removeAll();
+                                currentAudio = null;
+                                currentRecordingItem = 'Slide';
+                                startRecording();
+                                addStopImage(showEnd);
+                            }, this);
+                            saySlide.play();
+                            currentAudio = saySlide;
+                        });
+                    }, this);
+                    saySwing.play();
+                    currentAudio = saySwing;
+                });
+            }, this);
+            sayTree.play();
+            currentAudio = sayTree;
+        }
+
+        function addStopImage(callback) {
+            var stopRecordingFunc = function () {
+                micImage.destroy();
+                stopImage.destroy();
+                stopRecording(callback);
+            }
+            micImage = game.add.sprite(game.world.centerX - (parkImage.width * .08), 0, 'microphone');
+            micImage.scale.setTo(.30 * parkImage.height / micImage.height);
+            micImage.y = parkImage.bottom + parkImage.height * .035;
+            micImage.anchor.setTo(.5, 0);
+            micImage.inputEnabled = true;
+            micImage.events.onInputDown.add(stopRecordingFunc, this);
+            stopImage = game.add.sprite(game.world.centerX + (parkImage.width * .08), 0, 'stopImage');
+            stopImage.scale.setTo(.15 * parkImage.height / stopImage.height);
+            stopImage.anchor.setTo(.5, 0);
+            stopImage.y = parkImage.bottom + parkImage.height * .12;
+            stopImage.inputEnabled = true;
+            stopImage.events.onInputDown.add(stopRecordingFunc, this);
+        }
+
+        function playYay(callback) {
+            var a = game.add.audio('yay');
+            a.onStop.add(function () {
+                a.onStop.removeAll();
+                callback();
+            }, this);
+            a.play();
+            currentAudio = a;
+        }
+
+        function getVideoScale(video) {
+            if (video.width > game.world.width) {
+                return game.world.width / video.width;
+            }
+        }
+
+        function showEnd() {
+            parkImage.destroy();
+            treeImage.destroy();
+            swingsImage.destroy();
+            slideImage.destroy();
+            kidsImage = game.add.sprite(game.world.centerX, game.world.centerY, 'kidsImage');
+            kidsImage.anchor.setTo(.5);
+            if (kidsImage.width > game.world.width) {
+                kidsImage.scale.setTo(game.world.width / kidsImage.width);
+            }
+            if (kidsImage.height > game.world.height) {
+                kidsImage.scale.setTo(game.world.height * kidsImage.scale.x / kidsImage.height);
+            }
+            playYay(function () { });
+        }
+
+        function gofull() {
+            if (game.scale.isFullScreen) {
+                game.scale.stopFullScreen();
+            }
+            else {
+                game.scale.startFullScreen(false);
+            }
+        }
+
+        function initRecorder(initCallback) {
+            recorder = new Recorder({
+                // monitorGain: parseInt(monitorGain.value, 10),
+                // monitorGain: 0,
+                // numberOfChannels: 1,
+                // bitRate: 64000,
+                // encoderSampleRate: 48000,
+                leaveStreamOpen: true,
+                encoderPath: "/static/catalyst/js/encoderWorker.min.js"
+                // encoderPath: "/static/catalyst/waveWorker.min.js"
+            });
+            // recorder.addEventListener("start", function (e) {
+            //     screenLogger('Recorder is started');
+            // });
+            // recorder.addEventListener("stop", function (e) {
+            //     screenLogger('Recorder is stopped');
+            // });
+            // recorder.addEventListener("pause", function (e) {
+            //     screenLogger('Recorder is paused');
+            // });
+            // recorder.addEventListener("resume", function (e) {
+            //     screenLogger('Recorder is resuming');
+            // });
+            // recorder.addEventListener("streamError", function (e) {
+            //     screenLogger('Error encountered: ' + e.error.name);
+            // });
+            recorder.addEventListener("streamReady", function (e) {
+                screenLogger('Audio stream is ready.');
+                initCallback();
+            });
+            recorder.addEventListener("dataAvailable", function (e) {
+                if (parent.addRecording) {
+                    decodeOgg(e.detail, currentRecordingItem);
+                    // addRecordingToParent(e.detail, currentRecordingItem, ".opus", "audio/ogg");
+                }
+            });
+            recorder.initStream();
+            function screenLogger(text, data) {
+                console.log(text + " " + (data || ''));
+            }
+        }
+
+        function decodeOgg(arrayBuffer, fileName) {
+            var typedArray = new Uint8Array(arrayBuffer);
+            var decoderWorker = new Worker('/static/catalyst/js/decoderWorker.min.js');
+            var wavWorker = new Worker('/static/catalyst/waveWorker.min.js');
+            var desiredSampleRate = 8000;
+            decoderWorker.postMessage({
+                command: 'init',
+                decoderSampleRate: desiredSampleRate,
+                outputBufferSampleRate: desiredSampleRate
+            });
+            wavWorker.postMessage({
+                command: 'init',
+                bitDepth: 16,
+                sampleRate: desiredSampleRate
+            });
+            decoderWorker.onmessage = function (e) {
+                // null means decoder is finished
+                if (e.data === null) {
+                    wavWorker.postMessage({ command: 'done' });
+                }
+                // e.data contains decoded buffers as float32 values
+                else {
+                    wavWorker.postMessage({
+                        command: 'record',
+                        buffers: e.data
+                    }, e.data.map(function (typedArray) {
+                        return typedArray.buffer;
+                    }));
+                }
+            };
+            wavWorker.onmessage = function (e) {
+                addRecordingToParent(e.data, fileName, ".wav", "audio/wav");
+            };
+            decoderWorker.postMessage({
+                command: 'decode',
+                pages: typedArray
+            }, [typedArray.buffer]);
+            decoderWorker.postMessage({
+                command: 'done'
+            });
+        };
+
+        function addRecordingToParent(data, fileName, extension, type) {
+            fileName = fileName + extension;
+            var dataBlob = new Blob([data], { type: type });
+            var url = URL.createObjectURL(dataBlob);
+            var audio = document.createElement('audio');
+            audio.controls = true;
+            audio.src = URL.createObjectURL(dataBlob);
+            var link = document.createElement('a');
+            link.href = url;
+            link.download = fileName;
+            link.innerHTML = fileName;
+            var li = document.createElement('li');
+            li.appendChild(link);
+            li.appendChild(document.createTextNode(" : "));
+            li.appendChild(audio);
+            parent.addRecording(li);
+        }
+
+        function addNativeRecordingToParent(fileName, extension) {
+            var $button = $("<button>", { id: "foo", "class": "a" }).text('Play ' + fileName).click(function () {
+                parent.jsBridge.callHandler('PlayRecording', { item: fileName }, function responseCallback(responseData) {
+                    console.log("JS received response for PlayRecording:", responseData);
+                });
+            });
+            var li = document.createElement('li');
+            li.appendChild($button[0]);
+            parent.addRecording(li);
+        }
+
+        var supportsVideoAutoplay = function (callback) {
+            if (typeof callback !== "function") {
+                return false
+            }
+
+            var v = document.createElement("video")
+            v.paused = true
+            var p = "play" in v && v.play()
+
+            callback(!v.paused || ("Promise" in window && p instanceof Promise))
+        }
+
+        function playParkVideoExperiment(audio) {
+            parkVideo = new Phaser.Video(game);
+            parkVideo.createVideoFromURL(parkVideoUrl, true);
+            var scale = getVideoScale(parkVideo);
+            parkVideoSprite = parkVideo.addToWorld(game.world.width / 2, game.world.height / 2, .5, .5, scale, scale);
+            parkVideo.onComplete.add(showPark);
+            parkVideo.play();
+        }
+    </script>
+
+</body>
+
+</html>

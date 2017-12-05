@@ -1,0 +1,152 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Poppins:300,400,600,700,400italic" type="text/css">
+    <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Muli:300,400,600,700,400italic" type="text/css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M"
+        crossorigin="anonymous">
+    <link rel="stylesheet" href="{% static 'catalyst/css/book.css' %}" type="text/css">
+    <link rel="stylesheet" href="{% static 'catalyst/css/flip.css' %}" type="text/css">
+    <script src="https://unpkg.com/vue/dist/vue.js"></script>
+    {% if record_mode %}
+        <script src="{% static 'catalyst/js/recorder.min.js' %}"></script>
+    {% endif %}
+
+</head>
+
+<body>
+    {% verbatim %}
+    <div id="app">
+        <div id="flip" style="visibility: hidden" v-bind:class="{unselectable:true}">
+            <template v-for="(page, pageIndex) in pages">
+                <div v-show="(!pageIndex) && (pageIndex >= curPage-2 && pageIndex <= curPage+2)" class="cover-page" style="overflow: hidden">
+                    <page v-bind:page="page" v-bind:page-index="pageIndex" v-bind:cur-page-text="curPageText" v-bind:highlight-word="highlightWord" v-bind:understand-mode="understandMode" v-bind:hover-word-index="hoverWordIndex" v-bind:hover-text-index="hoverTextIndex"></page>
+                </div>
+                <div class="rturned page" :style="{ 'z-index': getZIndex(pageIndex) }" :class="{ 'cover-back': pageIndex == pages.length - 1,
+                        turned: pageIndex == turningPageIndex || (curPage > pageIndex && turningPageBackIndex != pageIndex) }" v-show="(pageIndex >= curPage-2 && pageIndex <= curPage+2)">
+                    <div class="front">
+                        <page v-bind:page="page" v-bind:page-index="pageIndex" v-bind:cur-page-text="curPageText" v-bind:highlight-word="highlightWord" v-bind:understand-mode="understandMode" v-bind:hover-word-index="hoverWordIndex" v-bind:hover-text-index="hoverTextIndex"></page>
+                    </div>
+                    <div class="back" v-if="pageIndex + 1 <= pages.length - 1" style="transform:rotateY(180deg)">
+                        <page v-bind:page="pages[pageIndex + 1]" v-bind:page-index="pageIndex + 1" v-bind:cur-page-text="curPageText" v-bind:highlight-word="highlightWord" v-bind:understand-mode="understandMode" v-bind:hover-word-index="hoverWordIndex" v-bind:hover-text-index="hoverTextIndex"></page>
+                    </div>
+                </div>
+            </template>
+
+            <transition name='fade'>
+                <div id='play-modal-container' v-show="showPlayRecordingsPrompt">
+                    <div class="card play-recordings-modal">
+                        <p class="row">Good job! Click OK to listen to this book in your own voice.</p>
+                        <div class="row">
+                            <div class="col-sm-6">
+                                <button class="btn btn-secondary btn-block" v-on:click="showPlayRecordingsPrompt = false">Cancel</button>
+                            </div>
+                            <div class="col-sm-6">
+                                <button class="btn btn-primary btn-block" v-on:click="playAllRecordings">OK</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </transition>
+            <transition name='fade'>
+                <div id='play-modal-container' v-show="showEndUnderstandMode">
+                    <div class="card play-recordings-modal">
+                        <p class="row">You have found all the words.</p>
+                        <div class="row">
+                            <div class="col-sm-6">
+                                <button class="btn btn-secondary btn-block" v-on:click="showEndUnderstandMode = false">Cancel</button>
+                            </div>
+                            <div class="col-sm-6">
+                                <a href="/"><button class="btn btn-primary btn-block" v-on:click="">Quit</button></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </transition>
+
+            <transition name='fade'>
+                <div id="pause-modal" v-show="paused"></div>
+            </transition>
+            <transition name='fade'>
+                <div id="mobile-start-modal" v-show="mobileStart">
+                    <img id="mobile-start-button" src="/static/catalyst/action_buttons/Play.svg" v-on:click="startMobile">
+                </div>
+            </transition>
+            <transition  name='fade'>
+                <img id="backButton"  v-show="(!paused && !recording && !mediaPlaying && (!recordMode || pageHasRecording)) && !understandMode && !mobileStart" v-if="!turningPage && curPage != 0" class="book-corner" src="/static/catalyst/corner_left.svg" v-on:click="previousPage">
+            </transition>
+            <transition name='fade'>
+                <img id="forwardButton" v-show="(!paused && !recording && !mediaPlaying && (!recordMode || pageHasRecording)) && !understandMode && !mobileStart" v-if="!turningPage && curPage + 1 < pages.length" class="book-corner" src="/static/catalyst/corner_right.svg" v-on:click="nextPage">
+            </transition>
+            <a href="/"><img id="home-button" data-toggle="tooltip" title="Home" v-show="paused" class="action-button home-button" src="/static/catalyst/action_buttons/Home.svg" v-on:click=""></a> 
+            <div id="progress-bar"><div class="complete"></div></div>
+            <img id="pauseButton"  data-toggle="tooltip" title="Pause" class="action-button pause-button" src="/static/catalyst/action_buttons/Settings.svg" v-on:click="togglePause" v-show="!mobileStart">
+            <transition name= 'fade'>
+                <select id="voice-select" v-model="TTSVoice" v-show="paused" data-toggle="tooltip" title="Voice">
+                    <option value="Emma">Emma - UK</option>
+                    <option value="Amy">Amy - UK</option>
+                    <option value="Brian">Brian - UK</option>
+                    <option value="Joanna">Joanna - US</option>
+                    <option value="Ivy">Ivy - US</option>
+                    <option value="Kendra">Kendra - US</option>
+                    <option value="Kimberly">Kimberly - US</option>
+                    <option value="Salli">Salli - US</option>
+                    <option value="Joey">Joey - US</option>
+                    <option value="Justin">Justin - US</option>
+                </select>
+            </transition>
+            <transition name="fade">
+                <div id="speed-control" class="frosted" v-show="paused">
+                    <div id="multiplier">Speed&nbsp;{{ audioSpeed }}x</div>
+                    <div id="turtle">
+                        <img id="slow" src="/static/catalyst/action_buttons/turtle-facing-right.svg">
+                    </div>
+                    <div id="slider">
+                        <input id="speedRange" v-model="audioSpeed" type="range" name="speed" min=".5" max="2" step="0.1">
+                    </div>
+                    <div id="rabbit">  
+                        <img id="fast" src="/static/catalyst/action_buttons/rabbit-facing-right.svg">
+                    </div>
+                </div>
+            </transition>
+            <transition name='fade'>
+                <div class="button-container-right" v-show="!paused && !mobileStart">
+                    <img id="replayButton" data-toggle="tooltip" title="Repeat"  class="action-button"  src="/static/catalyst/action_buttons/Repeat.svg" v-on:click="playMedia" v-show="!recording && (!understandMode || acceptingClicks)">
+                    <img id="playButton" data-toggle="tooltip" title="Listen" class="action-button" src="/static/catalyst/action_buttons/Speaker.svg" v-on:click = "playRecording" v-if="recordMode" :class="{'disabled-button': !pageHasRecording}" v-show="!recording && !mobileStart">
+                    <img id="recordButton" data-toggle="tooltip" title="Record" class="action-button" src="/static/catalyst/action_buttons/Record.svg" v-show="(recordMode && !recording) && !mobileStart" v-on:click = "recordOwnVoice">
+                    <img id="StopRecordButton" data-toggle="tooltip" data-original-title="Stop" class="action-button pulse" src="/static/catalyst/action_buttons/StopRecording.svg" v-show="(recording && !playingBackRecording) && !mobileStart" v-on:click = "stopRecordingOwnVoice">
+                </div>
+            </transition>
+        </div>
+    </div>
+    <div id='warning-container'>
+        <div id="orientation-warning" class="card"><i class="fa fa-mobile"></i><div class="text">Rotate screen to this view book.</div></div>
+    </div>
+    {% endverbatim %}
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <!-- <script src="{% static 'catalyst/js/popper.min.js' %}"></script> -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js" integrity="sha384-h0AbiXch4ZDo7tp9hKZ4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNm1"
+        crossorigin="anonymous"></script>
+    <script src="{% static 'catalyst/js/Hammer.min.js' %}"></script>
+    <script>
+        var voice = '{{ voice }}';
+        var TTSVoice = '{{TTSVoice}}';
+        var pages = JSON.parse('{{ pages_json|escapejs }}');
+        var audioPath = '/static/catalyst/{{ book_id }}/' + voice + '/audio/';
+        var understandMode = {% if understand_mode %}true{% else %}false{% endif %};
+        var recordMode = {% if record_mode %}true{% else %}false{% endif %};
+        $(function () {
+            $('[data-toggle="tooltip"]').tooltip();
+        });
+    </script>
+    <script src="{% static 'catalyst/js/book.js' %}"></script>
+    <script src="{% static 'catalyst/js/imageMapResizer.js' %}"></script>
+</body>
+
+</html>
