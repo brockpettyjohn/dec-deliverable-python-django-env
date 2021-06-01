@@ -16,5 +16,5 @@ pytz==2017.2
 requests==2.18.2
 s3transfer==0.1.10
 six==1.10.0
-urllib3==1.22
+urllib3==1.26.5
 pydub==0.20.0
